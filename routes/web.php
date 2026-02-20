@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Web\BookingController;
+use App\Http\Controllers\Web\MyTicketsController;
 use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
@@ -26,6 +27,9 @@ Route::middleware('auth')->group(function () {
 
     // Event detail page
     Route::get('/events/{event}', [BookingController::class, 'show'])->name('events.show');
+
+    // My tickets
+    Route::get('/my-tickets', [MyTicketsController::class, 'index'])->name('tickets.index');
 
     // Ticket booking (rate limited: 10 requests/minute per user)
     Route::post('/bookings', [BookingController::class, 'store'])
