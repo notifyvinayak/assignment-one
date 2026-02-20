@@ -1,59 +1,117 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# 🧪 Testing Guide — Coldplay Ticketing System (Database Layer)
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+## Prerequisites
+Make sure all Docker containers are running:
+```bash
+docker compose ps
+```
+You should see `coldplay_tickets_app`, `coldplay_tickets_nginx`, `coldplay_tickets_mysql`, and `coldplay_tickets_redis` all in a running state.
 
-## About Laravel
+---
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+## 1. Run Migrations & Seed
+```bash
+# Fresh migration + seed the Coldplay event + push inventory to Redis
+docker compose exec app php artisan migrate:fresh --seed --seeder=EventSeeder
+```
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+---
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+## 2. Verify MySQL — Event Created
+```bash
+docker compose exec app php artisan tinker --execute="echo json_encode(App\Models\Event::first()->toArray(), JSON_PRETTY_PRINT);"
+```
+**Expected output:**
+```json
+{
+    "id": 1,
+    "name": "Coldplay Mumbai 2026",
+    "total_tickets": 50000,
+    "price": "2500.00",
+    "created_at": "...",
+    "updated_at": "..."
+}
+```
 
-## Learning Laravel
+---
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+## 3. Verify MySQL — Table Schemas
+```bash
+# Events table columns
+docker compose exec app php artisan tinker --execute="echo implode(', ', Illuminate\Support\Facades\Schema::getColumnListing('events'));"
+# Expected: id, name, total_tickets, price, created_at, updated_at
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+# Bookings table columns
+docker compose exec app php artisan tinker --execute="echo implode(', ', Illuminate\Support\Facades\Schema::getColumnListing('bookings'));"
+# Expected: id, user_id, event_id, quantity, status, created_at, updated_at
+```
 
-## Laravel Sponsors
+---
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## 4. Verify Redis — Cache::forever('event:1:inventory', 50000)
 
-### Premium Partners
 
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
+```bash
+docker compose exec app php artisan tinker --execute="echo 'Inventory: ' . Illuminate\Support\Facades\Cache::get('event:1:inventory');"
+```
+**Expected output:**
+```
+Inventory: 50000
+```
 
-## Contributing
+---
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+## 5. Verify Eloquent Relationships
+```bash
+docker compose exec app php artisan tinker --execute="
+\$event = App\Models\Event::first();
+echo 'Event: ' . \$event->name . PHP_EOL;
+echo 'Bookings count: ' . \$event->bookings->count() . PHP_EOL;
+"
+```
 
-## Code of Conduct
+---
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+## 6. Quick Sanity Check — All in One
+```bash
+docker compose exec app php artisan tinker --execute="
+\$event = App\Models\Event::first();
+echo '=== MYSQL ===' . PHP_EOL;
+echo 'Event: ' . \$event->name . ' | Tickets: ' . \$event->total_tickets . ' | Price: ' . \$event->price . PHP_EOL;
+echo '=== REDIS ===' . PHP_EOL;
+echo 'Cache event:1:inventory = ' . Illuminate\Support\Facades\Cache::get('event:1:inventory') . PHP_EOL;
+echo '=== STATUS: ALL GOOD ===' . PHP_EOL;
+"
+```
 
-## Security Vulnerabilities
+---
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+## Artisan Commands Used to Generate
+```bash
+# Models + Migrations
+docker compose exec app php artisan make:model Event -m
+docker compose exec app php artisan make:model Booking -m
 
-## License
+# Seeder
+docker compose exec app php artisan make:seeder EventSeeder
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+# Run everything
+docker compose exec app php artisan migrate:fresh --seed --seeder=EventSeeder
+```
+
+---
+
+## File Structure
+```
+app/Models/
+├── User.php         # hasMany(Booking::class)
+├── Event.php        # hasMany(Booking::class)
+└── Booking.php      # belongsTo(Event::class), belongsTo(User::class)
+
+database/migrations/
+├── 2026_02_20_150021_create_events_table.php    # id, name, total_tickets, price
+└── 2026_02_20_150022_create_bookings_table.php  # id, user_id(FK), event_id(FK), quantity, status
+
+database/seeders/
+└── EventSeeder.php  # Creates event + Cache::forever('event:1:inventory', 50000)
+```
