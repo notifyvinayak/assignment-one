@@ -14,6 +14,7 @@ class BookingControllerTest extends TestCase
     use RefreshDatabase;
 
     private User $user;
+
     private Event $event;
 
     protected function setUp(): void
@@ -23,9 +24,9 @@ class BookingControllerTest extends TestCase
         $this->user = User::factory()->create();
 
         $this->event = Event::create([
-            'name'          => 'Test Concert',
+            'name' => 'Test Concert',
             'total_tickets' => 100,
-            'price'         => 500.00,
+            'price' => 500.00,
         ]);
 
         app(BookingService::class)->initInventory($this->event->id, $this->event->total_tickets);
@@ -56,10 +57,10 @@ class BookingControllerTest extends TestCase
         $response->assertSessionHas('success');
 
         $this->assertDatabaseHas('bookings', [
-            'user_id'  => $this->user->id,
+            'user_id' => $this->user->id,
             'event_id' => $this->event->id,
             'quantity' => 2,
-            'status'   => 'confirmed',
+            'status' => 'confirmed',
         ]);
     }
 
@@ -97,10 +98,10 @@ class BookingControllerTest extends TestCase
     {
         // Book 3 tickets first
         Booking::create([
-            'user_id'  => $this->user->id,
+            'user_id' => $this->user->id,
             'event_id' => $this->event->id,
             'quantity' => 3,
-            'status'   => 'confirmed',
+            'status' => 'confirmed',
         ]);
 
         // Booking 2 more should fail (3 + 2 = 5 > 4)
@@ -155,12 +156,12 @@ class BookingControllerTest extends TestCase
                 'data' => [
                     'event_id' => $this->event->id,
                     'quantity' => 2,
-                    'status'   => 'confirmed',
+                    'status' => 'confirmed',
                 ],
             ]);
 
         $this->assertDatabaseHas('bookings', [
-            'user_id'  => $this->user->id,
+            'user_id' => $this->user->id,
             'event_id' => $this->event->id,
             'quantity' => 2,
         ]);
@@ -182,10 +183,10 @@ class BookingControllerTest extends TestCase
     {
         // Existing booking with 4 tickets
         Booking::create([
-            'user_id'  => $this->user->id,
+            'user_id' => $this->user->id,
             'event_id' => $this->event->id,
             'quantity' => 4,
-            'status'   => 'confirmed',
+            'status' => 'confirmed',
         ]);
 
         $response = $this->actingAs($this->user, 'sanctum')

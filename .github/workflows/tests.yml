@@ -1,4 +1,4 @@
-name: Tests
+name: CI Pipeline
 
 on:
   push:
@@ -7,8 +7,8 @@ on:
     branches: [main]
 
 jobs:
-  tests:
-    name: Run Test Suite
+  quality-gate:
+    name: Code Quality & Tests
     runs-on: ubuntu-latest
 
     services:
@@ -61,9 +61,23 @@ jobs:
 
       - name: Run migrations
         run: php artisan migrate --force
-
-      - name: Run tests
-        run: php artisan test
         env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
+
+      - name: 1. Check Code Style (Pint)
+        run: ./vendor/bin/pint --test
+
+      - name: 2. Static Analysis (Larastan)
+        run: ./vendor/bin/phpstan analyse --memory-limit=2G
+
+      - name: 3. Security Audit
+        run: composer audit
+
+      - name: 4. Run Automated Tests
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ":memory:"
           REDIS_HOST: 127.0.0.1
           REDIS_PORT: 6379
+        run: php artisan test

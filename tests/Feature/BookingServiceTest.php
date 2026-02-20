@@ -16,7 +16,9 @@ class BookingServiceTest extends TestCase
     use RefreshDatabase;
 
     private BookingService $bookingService;
+
     private User $user;
+
     private Event $event;
 
     protected function setUp(): void
@@ -28,9 +30,9 @@ class BookingServiceTest extends TestCase
         $this->user = User::factory()->create();
 
         $this->event = Event::create([
-            'name'          => 'Test Concert',
+            'name' => 'Test Concert',
             'total_tickets' => 100,
-            'price'         => 500.00,
+            'price' => 500.00,
         ]);
 
         // Initialize Redis inventory the same way the seeder does
@@ -56,11 +58,11 @@ class BookingServiceTest extends TestCase
 
         // Assert the booking was persisted in the database
         $this->assertDatabaseHas('bookings', [
-            'id'       => $booking->id,
-            'user_id'  => $this->user->id,
+            'id' => $booking->id,
+            'user_id' => $this->user->id,
             'event_id' => $this->event->id,
             'quantity' => 2,
-            'status'   => 'confirmed',
+            'status' => 'confirmed',
         ]);
 
         // Assert Redis inventory was decremented
@@ -185,9 +187,9 @@ class BookingServiceTest extends TestCase
     public function test_init_inventory_and_get_available_tickets(): void
     {
         $newEvent = Event::create([
-            'name'          => 'Another Concert',
+            'name' => 'Another Concert',
             'total_tickets' => 5000,
-            'price'         => 1200.00,
+            'price' => 1200.00,
         ]);
 
         $this->bookingService->initInventory($newEvent->id, 5000);
@@ -250,9 +252,9 @@ class BookingServiceTest extends TestCase
     public function test_different_events_have_independent_inventories(): void
     {
         $event2 = Event::create([
-            'name'          => 'Second Concert',
+            'name' => 'Second Concert',
             'total_tickets' => 50,
-            'price'         => 300.00,
+            'price' => 300.00,
         ]);
         $this->bookingService->initInventory($event2->id, 50);
 

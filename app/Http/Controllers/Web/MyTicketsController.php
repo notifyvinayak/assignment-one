@@ -20,13 +20,13 @@ class MyTicketsController extends Controller
             ->latest()
             ->get()
             ->map(fn ($booking) => [
-                'id'         => $booking->id,
-                'quantity'   => $booking->quantity,
-                'status'     => $booking->status,
+                'id' => $booking->id,
+                'quantity' => $booking->quantity,
+                'status' => $booking->status,
                 'created_at' => $booking->created_at->toDateTimeString(),
-                'event'      => [
-                    'id'    => $booking->event->id,
-                    'name'  => $booking->event->name,
+                'event' => [
+                    'id' => $booking->event->id,
+                    'name' => $booking->event->name,
                     'price' => $booking->event->price,
                 ],
             ]);

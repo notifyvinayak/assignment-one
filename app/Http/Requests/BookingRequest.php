@@ -23,8 +23,8 @@ class BookingRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'event_id'  => ['required', 'integer', 'exists:events,id'],
-            'quantity'  => ['required', 'integer', 'min:1', 'max:4'],
+            'event_id' => ['required', 'integer', 'exists:events,id'],
+            'quantity' => ['required', 'integer', 'min:1', 'max:4'],
         ];
     }
 
@@ -41,7 +41,7 @@ class BookingRequest extends FormRequest
                 return; // skip custom check if basic validation already failed
             }
 
-            $userId  = $this->user()->id;
+            $userId = $this->user()->id;
             $eventId = $this->input('event_id');
             $quantity = (int) $this->input('quantity');
 

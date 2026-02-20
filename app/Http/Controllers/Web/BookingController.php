@@ -24,11 +24,11 @@ class BookingController extends Controller
     {
         return Inertia::render('Event/Show', [
             'event' => [
-                'id'            => $event->id,
-                'name'          => $event->name,
+                'id' => $event->id,
+                'name' => $event->name,
                 'total_tickets' => $event->total_tickets,
-                'price'         => $event->price,
-                'created_at'    => $event->created_at,
+                'price' => $event->price,
+                'created_at' => $event->created_at,
             ],
             'redis_inventory' => $this->bookingService->getAvailableTickets($event->id),
         ]);
@@ -44,7 +44,7 @@ class BookingController extends Controller
     {
         try {
             $booking = $this->bookingService->bookTickets(
-                userId:  $request->user()->id,
+                userId: $request->user()->id,
                 eventId: $request->validated('event_id'),
                 quantity: $request->validated('quantity'),
             );
@@ -55,4 +55,3 @@ class BookingController extends Controller
         }
     }
 }
-

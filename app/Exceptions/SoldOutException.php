@@ -7,7 +7,9 @@ use Exception;
 class SoldOutException extends Exception
 {
     protected int $eventId;
+
     protected int $requestedQuantity;
+
     protected int $availableQuantity;
 
     public function __construct(

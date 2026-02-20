@@ -25,27 +25,27 @@ class BookingController extends Controller
     {
         try {
             $booking = $this->bookingService->bookTickets(
-                userId:  $request->user()->id,
+                userId: $request->user()->id,
                 eventId: $request->validated('event_id'),
                 quantity: $request->validated('quantity'),
             );
 
             return response()->json([
                 'message' => 'Tickets booked successfully.',
-                'data'    => [
+                'data' => [
                     'booking_id' => $booking->id,
-                    'event_id'   => $booking->event_id,
-                    'quantity'   => $booking->quantity,
-                    'status'     => $booking->status,
+                    'event_id' => $booking->event_id,
+                    'quantity' => $booking->quantity,
+                    'status' => $booking->status,
                     'created_at' => $booking->created_at,
                 ],
             ], Response::HTTP_CREATED);
         } catch (SoldOutException $e) {
             return response()->json([
                 'message' => $e->getMessage(),
-                'error'   => 'sold_out',
+                'error' => 'sold_out',
                 'details' => [
-                    'event_id'           => $e->getEventId(),
+                    'event_id' => $e->getEventId(),
                     'requested_quantity' => $e->getRequestedQuantity(),
                     'available_quantity' => $e->getAvailableQuantity(),
                 ],
