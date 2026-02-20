@@ -48,16 +48,23 @@ docker compose exec app php artisan tinker --execute="echo implode(', ', Illumin
 
 ---
 
-## 4. Verify Redis — Cache::forever('event:1:inventory', 50000)
-
+## 4. Verify Redis — Ticket Inventory
+The inventory is stored via `Redis::set('event_inventory:{id}', ...)` (not `Cache::`).
 
 ```bash
-docker compose exec app php artisan tinker --execute="echo 'Inventory: ' . Illuminate\Support\Facades\Cache::get('event:1:inventory');"
+# Via BookingService (recommended)
+docker compose exec app php artisan tinker --execute="echo 'Inventory: ' . app(App\Services\BookingService::class)->getAvailableTickets(1);"
+
+# Or via the Redis facade directly
+docker compose exec app php artisan tinker --execute="echo 'Inventory: ' . Illuminate\Support\Facades\Redis::get('event_inventory:1');"
 ```
 **Expected output:**
 ```
 Inventory: 50000
 ```
+
+> ⚠️ **Note:** Do NOT use `Cache::get()` to check this key. The `BookingService` uses the `Redis` facade
+> (prefix: `laravel-database-`), while `Cache::get()` uses a different prefix (`laravel_cache:`).
 
 ---
 
@@ -76,13 +83,40 @@ echo 'Bookings count: ' . \$event->bookings->count() . PHP_EOL;
 ```bash
 docker compose exec app php artisan tinker --execute="
 \$event = App\Models\Event::first();
+\$inventory = app(App\Services\BookingService::class)->getAvailableTickets(\$event->id);
 echo '=== MYSQL ===' . PHP_EOL;
 echo 'Event: ' . \$event->name . ' | Tickets: ' . \$event->total_tickets . ' | Price: ' . \$event->price . PHP_EOL;
 echo '=== REDIS ===' . PHP_EOL;
-echo 'Cache event:1:inventory = ' . Illuminate\Support\Facades\Cache::get('event:1:inventory') . PHP_EOL;
+echo 'event_inventory:' . \$event->id . ' = ' . \$inventory . PHP_EOL;
 echo '=== STATUS: ALL GOOD ===' . PHP_EOL;
 "
 ```
+
+---
+
+## 7. Run the Test Suite
+```bash
+# Run all BookingService tests (11 tests, 26 assertions)
+docker exec coldplay_tickets_app php vendor/bin/phpunit tests/Feature/BookingServiceTest.php
+
+# Run the full test suite
+docker exec coldplay_tickets_app php vendor/bin/phpunit
+```
+
+**Tests cover:**
+| # | Test | What It Verifies |
+|---|---|---|
+| 1 | Happy path booking | Booking created, DB record exists, inventory decremented |
+| 2 | Multiple bookings | Sequential bookings decrement correctly |
+| 3 | Exact inventory | Booking all remaining tickets works |
+| 4 | SoldOut — over limit | Requesting > available throws `SoldOutException` |
+| 5 | SoldOut — exhausted | After all tickets booked, even 1 more fails |
+| 6 | Exception context | Exception carries correct eventId, quantities, message |
+| 7 | No DB record on SoldOut | Zero bookings inserted on failure |
+| 8 | Inventory unchanged on SoldOut | Redis inventory untouched when check fails |
+| 9 | init/get round-trip | `initInventory()` → `getAvailableTickets()` consistency |
+| 10 | DB failure rollback | Redis inventory restored when DB insert fails |
+| 11 | Independent events | Booking one event doesn't affect another |
 
 ---
 
@@ -103,15 +137,23 @@ docker compose exec app php artisan migrate:fresh --seed --seeder=EventSeeder
 
 ## File Structure
 ```
-app/Models/
-├── User.php         # hasMany(Booking::class)
-├── Event.php        # hasMany(Booking::class)
-└── Booking.php      # belongsTo(Event::class), belongsTo(User::class)
+app/
+├── Exceptions/
+│   └── SoldOutException.php  # Custom exception with eventId, requested/available qty
+├── Models/
+│   ├── User.php              # hasMany(Booking::class)
+│   ├── Event.php             # hasMany(Booking::class)
+│   └── Booking.php           # belongsTo(Event::class), belongsTo(User::class)
+└── Services/
+    └── BookingService.php    # bookTickets(), initInventory(), getAvailableTickets()
 
 database/migrations/
 ├── 2026_02_20_150021_create_events_table.php    # id, name, total_tickets, price
 └── 2026_02_20_150022_create_bookings_table.php  # id, user_id(FK), event_id(FK), quantity, status
 
 database/seeders/
-└── EventSeeder.php  # Creates event + Cache::forever('event:1:inventory', 50000)
+└── EventSeeder.php           # Creates event + initialises Redis inventory via BookingService
+
+tests/Feature/
+└── BookingServiceTest.php    # 11 tests covering concurrency, rollback, edge cases
 ```
