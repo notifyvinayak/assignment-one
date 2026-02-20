@@ -24,6 +24,9 @@ Route::middleware('auth')->group(function () {
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
+    // Event detail page
+    Route::get('/events/{event}', [BookingController::class, 'show'])->name('events.show');
+
     // Ticket booking (rate limited: 10 requests/minute per user)
     Route::post('/bookings', [BookingController::class, 'store'])
         ->middleware('throttle:booking')
