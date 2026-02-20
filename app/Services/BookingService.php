@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Exceptions\SoldOutException;
+use App\Jobs\SendBookingConfirmationJob;
 use App\Models\Booking;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -76,7 +77,7 @@ class BookingService
 
             // ── 5. Persist the booking in the database ──────────────────
             try {
-                return DB::transaction(function () use ($userId, $eventId, $quantity) {
+                $booking = DB::transaction(function () use ($userId, $eventId, $quantity) {
                     return Booking::create([
                         'user_id'  => $userId,
                         'event_id' => $eventId,
@@ -84,6 +85,11 @@ class BookingService
                         'status'   => 'confirmed',
                     ]);
                 });
+
+                // ── 6. Dispatch async confirmation email ─────────────────
+                SendBookingConfirmationJob::dispatch($booking);
+
+                return $booking;
             } catch (\Throwable $e) {
                 // ── 6. Rollback: restore inventory in Redis ─────────────
                 Redis::incrby($inventoryKey, $quantity);

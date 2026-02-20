@@ -53,6 +53,21 @@ services:
     networks:
       - ticketing-network
 
+  horizon:
+    image: coldplay-tickets-app
+    container_name: coldplay_tickets_horizon
+    restart: unless-stopped
+    working_dir: /var/www
+    command: php artisan horizon
+    volumes:
+      - ./:/var/www
+    networks:
+      - ticketing-network
+    depends_on:
+      - app
+      - mysql
+      - redis
+
 networks:
   ticketing-network:
     driver: bridge
