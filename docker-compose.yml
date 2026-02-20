@@ -1,0 +1,61 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: coldplay-tickets-app
+    container_name: coldplay_tickets_app
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./:/var/www
+    ports:
+      - "5173:5173"
+    networks:
+      - ticketing-network
+
+  nginx:
+    image: nginx:alpine
+    container_name: coldplay_tickets_nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./:/var/www
+      - ./nginx/conf.d:/etc/nginx/conf.d
+    networks:
+      - ticketing-network
+    depends_on:
+      - app
+
+  mysql:
+    image: mysql:8.0
+    container_name: coldplay_tickets_mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: coldplay_tickets
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_PASSWORD: secret
+      MYSQL_USER: ticketing_user
+    ports:
+      - "3306:3306"
+    volumes:
+      - dbdata:/var/lib/mysql
+    networks:
+      - ticketing-network
+
+  redis:
+    image: redis:alpine
+    container_name: coldplay_tickets_redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - ticketing-network
+
+networks:
+  ticketing-network:
+    driver: bridge
+
+volumes:
+  dbdata:
