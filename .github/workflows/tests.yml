@@ -33,6 +33,12 @@ jobs:
           extensions: mbstring, pdo_sqlite, redis, pcntl, bcmath, gd, sockets
           coverage: none
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
       - name: Cache Composer dependencies
         uses: actions/cache@v4
         with:
@@ -42,6 +48,11 @@ jobs:
 
       - name: Install Composer dependencies
         run: composer install --no-interaction --prefer-dist --optimize-autoloader
+
+      - name: Install NPM dependencies & build assets
+        run: |
+          npm ci
+          npm run build
 
       - name: Prepare environment
         run: |
