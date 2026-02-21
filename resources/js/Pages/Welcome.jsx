@@ -8,13 +8,13 @@ export default function Welcome({ auth, events }) {
 
             {/* ── Spotlight / Glow Effects ────────────────────────────── */}
             <div className="fixed inset-0 z-0 pointer-events-none overflow-hidden">
-                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-900/40 blur-[120px] rounded-full mix-blend-screen animate-[pulse_8s_ease-in-out_infinite]" />
-                <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] bg-indigo-900/30 blur-[120px] rounded-full mix-blend-screen animate-[pulse_10s_ease-in-out_infinite_reverse]" />
-                <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[50%] bg-fuchsia-900/20 blur-[150px] rounded-full mix-blend-screen animate-[pulse_12s_ease-in-out_infinite]" />
+                <div className="absolute top-[-20%] left-[-10%] w-[50%] h-[50%] bg-purple-200/60 dark:bg-purple-900/40 blur-[100px] dark:blur-[120px] rounded-full mix-blend-multiply dark:mix-blend-screen animate-[pulse_8s_ease-in-out_infinite]" />
+                <div className="absolute top-[20%] right-[-10%] w-[40%] h-[60%] bg-indigo-200/50 dark:bg-indigo-900/30 blur-[100px] dark:blur-[120px] rounded-full mix-blend-multiply dark:mix-blend-screen animate-[pulse_10s_ease-in-out_infinite_reverse]" />
+                <div className="absolute bottom-[-20%] left-[20%] w-[60%] h-[50%] bg-fuchsia-200/40 dark:bg-fuchsia-900/20 blur-[120px] dark:blur-[150px] rounded-full mix-blend-multiply dark:mix-blend-screen animate-[pulse_12s_ease-in-out_infinite]" />
             </div>
 
             {/* ── Navbar ────────────────────────────────────────────── */}
-            <nav className="fixed w-full z-50 bg-black/50 backdrop-blur-xl border-b border-white/10">
+            <nav className="fixed w-full z-50 bg-white/70 dark:bg-black/50 backdrop-blur-xl border-b border-gray-200 dark:border-white/10 transition-colors duration-300">
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
                     <div className="flex justify-between items-center h-20">
                         <div className="flex-shrink-0 flex items-center gap-3">
@@ -42,7 +42,7 @@ export default function Welcome({ auth, events }) {
                                 </>
                             ) : (
                                 <>
-                                    <Link href={route('login')} className="text-sm font-bold text-gray-300 hover:text-white transition">
+                                    <Link href={route('login')} className="text-sm font-bold text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition">
                                         Log in
                                     </Link>
                                     <Link
@@ -60,10 +60,10 @@ export default function Welcome({ auth, events }) {
 
             {/* ── Hero Section ──────────────────────────────────────── */}
             <div className="relative z-10 pt-40 pb-20 sm:pt-48 sm:pb-32 lg:pb-40 px-4 sm:px-6 lg:px-8 text-center flex flex-col items-center justify-center min-h-[70vh]">
-                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-500/30 bg-purple-500/10 backdrop-blur-md mb-8 animate-[fadeInDown_1s_ease-out]">
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-purple-200 dark:border-purple-500/30 bg-purple-50 dark:bg-purple-500/10 backdrop-blur-md mb-8 animate-[fadeInDown_1s_ease-out] shadow-sm">
                     <span className="flex h-2 w-2 rounded-full bg-purple-500 animate-ping absolute"></span>
                     <span className="h-2 w-2 rounded-full bg-purple-500 relative"></span>
-                    <span className="text-xs font-bold tracking-widest text-purple-300 uppercase">Music of the Spheres World Tour</span>
+                    <span className="text-xs font-bold tracking-widest text-purple-700 dark:text-purple-300 uppercase">Music of the Spheres World Tour</span>
                 </div>
 
                 <h1 className="text-6xl font-black tracking-tighter text-gray-900 dark:text-white sm:text-8xl lg:text-9xl mb-6 uppercase animate-[fadeInUp_1s_ease-out]">
@@ -73,7 +73,7 @@ export default function Welcome({ auth, events }) {
                     </span>
                 </h1>
 
-                <p className="mt-4 max-w-2xl text-xl text-gray-400 font-medium animate-[fadeInUp_1.2s_ease-out]">
+                <p className="mt-4 max-w-2xl text-xl text-gray-600 dark:text-gray-400 font-medium animate-[fadeInUp_1.2s_ease-out]">
                     Secure your spot instantly with our blazing-fast atomic ticket queue. Built for massive scale. Ready when you are.
                 </p>
             </div>
@@ -93,13 +93,13 @@ export default function Welcome({ auth, events }) {
                                 className="group relative flex flex-col bg-white dark:bg-white/5 backdrop-blur-md rounded-3xl border border-gray-200 dark:border-white/10 hover:border-purple-500/50 transition-all duration-500 overflow-hidden hover:-translate-y-2 shadow-xl dark:shadow-none hover:shadow-[0_20px_40px_-15px_rgba(168,85,247,0.3)]"
                             >
                                 {/* Image Placeholder Banner */}
-                                <div className="h-56 bg-black relative overflow-hidden">
-                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-600/40 to-indigo-900/40 mix-blend-overlay group-hover:scale-110 transition-transform duration-700 ease-out" />
+                                <div className="h-56 bg-gray-100 dark:bg-black relative overflow-hidden">
+                                    <div className="absolute inset-0 bg-gradient-to-br from-purple-200/80 dark:from-purple-600/40 to-indigo-200/80 dark:to-indigo-900/40 mix-blend-multiply dark:mix-blend-overlay group-hover:scale-110 transition-transform duration-700 ease-out" />
                                     {/* Abstract shapes inside banner */}
-                                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-purple-500/30 blur-2xl rounded-full" />
-                                    <div className="absolute -top-10 -left-10 w-32 h-32 bg-indigo-500/30 blur-2xl rounded-full" />
+                                    <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-purple-400/30 dark:bg-purple-500/30 blur-2xl rounded-full" />
+                                    <div className="absolute -top-10 -left-10 w-32 h-32 bg-indigo-400/30 dark:bg-indigo-500/30 blur-2xl rounded-full" />
 
-                                    <div className="absolute top-5 left-5 bg-black/60 backdrop-blur-md text-xs font-bold px-4 py-2 rounded-full text-white shadow-lg uppercase tracking-wider border border-white/10">
+                                    <div className="absolute top-5 left-5 bg-white/90 dark:bg-black/60 backdrop-blur-md text-xs font-bold px-4 py-2 rounded-full text-gray-900 dark:text-white shadow-lg uppercase tracking-wider border border-gray-200 dark:border-white/10">
                                         Selling Fast
                                     </div>
                                 </div>
