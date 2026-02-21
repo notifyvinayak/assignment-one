@@ -26,34 +26,16 @@ class BookingService
      * Lock timeout in seconds. Keeps the critical section short
      * so waiting requests aren't blocked for too long.
      */
-    private const LOCK_TIMEOUT = 5;
+    /**
+     * Lock timeout in seconds.
+     */
+    private const LOCK_TIMEOUT = 45;
 
     /**
-     * Maximum seconds a request will wait to acquire the lock
-     * before giving up (prevents infinite queuing under load).
+     * Maximum seconds a request will wait to acquire the lock.
      */
-    private const LOCK_WAIT = 10;
+    private const LOCK_WAIT = 45;
 
-    /**
-     * Book tickets for a user.
-     *
-     * Flow:
-     *  1. Acquire a per-event Redis atomic lock (serialises concurrent requests).
-     *  2. Read current inventory from Redis.
-     *  3. If insufficient inventory → throw SoldOutException.
-     *  4. Decrement inventory in Redis (optimistic fast path).
-     *  5. Insert the Booking row inside a DB transaction.
-     *  6. If the DB write fails → increment inventory back in Redis (rollback)
-     *     and rethrow the exception.
-     *
-     * @param  int  $userId  The ID of the user making the booking.
-     * @param  int  $eventId  The ID of the event to book.
-     * @param  int  $quantity  The number of tickets requested.
-     * @return Booking The newly created Booking model.
-     *
-     * @throws SoldOutException When requested quantity exceeds available inventory.
-     * @throws \Throwable When the database transaction fails.
-     */
     public function bookTickets(int $userId, int $eventId, int $quantity): Booking
     {
         $lockKey = self::LOCK_KEY_PREFIX.$eventId;
@@ -70,6 +52,14 @@ class BookingService
             // ── 3. Check availability ───────────────────────────────────
             if ($quantity > $available) {
                 throw new SoldOutException($eventId, $quantity, $available);
+            }
+
+            // ── [PAYMENT SIMULATION] ──────────────────────────────────────
+            // Simulates a slow 30-sec checkout gateway inside the critical
+            // section to explicitly demonstrate how atomic locks queue
+            // concurrent ticket buyers globally!
+            if (! app()->runningUnitTests()) {
+                sleep(30);
             }
 
             // ── 4. Decrement inventory in Redis (fast, atomic) ──────────

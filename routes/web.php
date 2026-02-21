@@ -11,22 +11,28 @@ Route::get('/', function () {
     return Inertia::render('Welcome', [
         'canLogin' => Route::has('login'),
         'canRegister' => Route::has('register'),
-        'laravelVersion' => Application::VERSION,
-        'phpVersion' => PHP_VERSION,
+        'events' => \App\Models\Event::all()->map(function ($event) {
+            return [
+                'id' => $event->id,
+                'name' => $event->name,
+                'price' => (float) $event->price,
+                'total_tickets' => $event->total_tickets,
+            ];
+        })
     ]);
 });
 
-Route::get('/dashboard', function () {
-    return Inertia::render('Dashboard');
-})->middleware(['auth', 'verified'])->name('dashboard');
+    // Dashboard removed in favor of tickets.index
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
     Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
     Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 
-    // Event detail page
-    Route::get('/events/{event}', [BookingController::class, 'show'])->name('events.show');
+    // Auth intercept for returning users to checkout after login
+    Route::get('/events/{event}/checkout-auth', function (\App\Models\Event $event) {
+        return redirect()->route('events.show', $event);
+    })->name('events.checkout-auth');
 
     // My tickets
     Route::get('/my-tickets', [MyTicketsController::class, 'index'])->name('tickets.index');
@@ -36,5 +42,8 @@ Route::middleware('auth')->group(function () {
         ->middleware('throttle:booking')
         ->name('bookings.store');
 });
+
+// Event detail page (Publicly accessible)
+Route::get('/events/{event}', [BookingController::class, 'show'])->name('events.show');
 
 require __DIR__.'/auth.php';

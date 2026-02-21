@@ -49,7 +49,7 @@ class BookingController extends Controller
                 quantity: $request->validated('quantity'),
             );
 
-            return redirect()->back()->with('success', "🎉 Booked {$booking->quantity} ticket(s) successfully! Booking #{$booking->id}");
+            return redirect()->route('tickets.index')->with('success', "🎉 Booked {$booking->quantity} ticket(s) successfully! Booking #{$booking->id}");
         } catch (SoldOutException $e) {
             return redirect()->back()->with('error', $e->getMessage());
         }
