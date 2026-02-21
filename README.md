@@ -121,3 +121,18 @@ If this were the real Coldplay launch going live to 5 million fans tomorrow, the
    * **Redis Cluster:** Use a managed, highly available Redis Cluster (like AWS ElastiCache) to ensure the atomic locks never fail due to a single node going down.
 3. **Event-Driven Booking Processing:**
    Instead of keeping an HTTP request open while processing a ticket, I would transition to a fully event-driven architecture (e.g., AWS SQS or Kafka). The user clicks "Book", their request goes to a queue, the UI shows a "Processing..." polling screen, and the backend workers grind through the queue at maximum safe capacity.
+
+
+## Screenshot
+
+### Landing Page
+![alt text](landing-page.png)
+
+### My Tickets
+![alt text](my-tickets.png)
+
+### Mailtrap
+![alt text](mailtrap.png)
+
+### Horizon
+![alt text](horizon.png)
