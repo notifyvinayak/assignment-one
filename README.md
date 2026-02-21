@@ -92,3 +92,32 @@ docker compose exec app ./vendor/bin/pint --test
 - Seamless zero-refresh SPA routing via **Inertia.js**.
 - Automatic Intent-based URL redirecting (Intercepts unauthorized checkouts, guides through login, and returns directly to the checkout form).
 - Beautiful, animated UI with a dynamic Light/Dark mode toggle (persisted via `localStorage`).
+
+---
+
+## ⚖️ Trade-offs & Architectural Decisions
+
+Building a system to handle the chaos of millions of Coldplay fans within a 24-hour development window requires strict prioritization. The core philosophy of this prototype is **Data Integrity over UI Complexity** and **Availability over Synchronous Processing**.
+
+### 🎯 What I Prioritized (The "Why")
+1. **Redis Atomic Locks over Database Transactions:** When millions of users hit the server, using `SELECT ... FOR UPDATE` on a MySQL database creates row-level locking. Under extreme load, this exhausts the database connection pool and leads to deadlocks or crashed servers. I prioritized **Redis** as the single source of truth for inventory during the rush. We acquire an atomic lock (`Cache::lock`), decrement in memory (sub-millisecond), and *then* write to the database.
+2. **Asynchronous Feedback (Horizon/Queues):** To keep the user experience "magical" and fast, email confirmations are not sent synchronously. They are pushed to a Redis queue and processed by Laravel Horizon workers in the background. 
+3. **API Extensibility:** While I used React/Inertia.js to deliver a modern SPA experience quickly, the core logic is isolated in a `BookingService`. I exposed a separate API route (`/api/bookings`) to prove that a native mobile application can consume the exact same underlying service.
+
+### ✂️ What I Cut (Due to 24-Hour Limit)
+1. **Specific Seat Selection:** Allowing users to pick specific seats (e.g., Row A, Seat 12) requires a highly complex database schema and a different locking strategy (locking individual seat rows rather than a global counter). I opted for "General Admission" to focus on the core concurrency problem.
+2. **Real Payment Gateway Integration:** Instead of integrating Stripe or Razorpay, I built a `sleep(30)` simulation within the lock. This actually serves a dual purpose: it mocks the payment delay *and* allows us to easily test our concurrency locks by firing simultaneous requests in development.
+3. **WebSockets for Real-Time Inventory:** In a perfect world, the "Tickets Remaining" UI would update via WebSockets (Laravel Reverb). Due to time constraints, I relied on state injection on page load and basic polling/React state.
+
+### 🚀 How I Would Scale This for Production
+If this were the real Coldplay launch going live to 5 million fans tomorrow, the current single-node Docker setup would not survive. Here is the production scaling strategy:
+
+1. **The Stampeding Herd (Virtual Waiting Room):**
+   
+   No server can handle 5 million concurrent POST requests. I would implement a Cloudflare Waiting Room or Queue-it integration at the edge/CDN level. This throttles traffic, allowing only a manageable batch of users (e.g., 10,000 per minute) to access the actual booking application.
+2. **Infrastructure Distribution:**
+   * **App Servers:** Move from a single container to an auto-scaling group (e.g., AWS EKS or ECS) behind an Application Load Balancer.
+   * **Database:** Implement MySQL Read Replicas to handle the read-heavy load of users viewing the event page, keeping the primary database strictly for the write-heavy `bookings` table.
+   * **Redis Cluster:** Use a managed, highly available Redis Cluster (like AWS ElastiCache) to ensure the atomic locks never fail due to a single node going down.
+3. **Event-Driven Booking Processing:**
+   Instead of keeping an HTTP request open while processing a ticket, I would transition to a fully event-driven architecture (e.g., AWS SQS or Kafka). The user clicks "Book", their request goes to a queue, the UI shows a "Processing..." polling screen, and the backend workers grind through the queue at maximum safe capacity.
