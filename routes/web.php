@@ -3,7 +3,6 @@
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Web\BookingController;
 use App\Http\Controllers\Web\MyTicketsController;
-use Illuminate\Foundation\Application;
 use Illuminate\Support\Facades\Route;
 use Inertia\Inertia;
 
@@ -18,11 +17,11 @@ Route::get('/', function () {
                 'price' => (float) $event->price,
                 'total_tickets' => $event->total_tickets,
             ];
-        })
+        }),
     ]);
 });
 
-    // Dashboard removed in favor of tickets.index
+// Dashboard removed in favor of tickets.index
 
 Route::middleware('auth')->group(function () {
     Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');

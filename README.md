@@ -1,167 +1,94 @@
-# 🎫 Coldplay Mumbai 2026 — Ticketing System
+# 🎫 TicketFlow — High-Concurrency Ticketing System
 
-A high-concurrency ticket booking system built with **Laravel**, **Redis**, and **MySQL**. Designed to handle millions of concurrent users with atomic locks, Redis-backed inventory, and strict per-user booking limits.
+A high-concurrency, modern ticket booking system built with **Laravel**, **React**, **Redis**, and **MySQL**. Designed to handle massive concurrent users with atomic locks, Redis-backed inventory, and strict per-user booking limits. Features a beautifully crafted, fully-responsive dark mode UI.
 
 ## Tech Stack
 
 | Layer | Technology |
 |---|---|
-| Framework | Laravel 12 (PHP 8.4) |
+| Framework | Laravel (PHP 8.2+) |
 | Database | MySQL 8.0 |
 | Cache / Locks | Redis (via `phpredis`) |
-| API Auth | Laravel Sanctum v4 |
-| Frontend | Inertia.js + Vue |
+| API Auth | Laravel Sanctum |
+| Frontend | React + Inertia.js |
+| Styling | Tailwind CSS (Dark Mode / Glassmorphism) |
 | Infrastructure | Docker Compose |
+
+---
+
+## Getting Started (Setup Instructions)
+
+Follow these steps to run the project locally via Docker.
+
+### 1. Requirements
+- Docker & Docker Compose installed on your machine.
+
+### 2. Environment Setup
+Clone the repository and prepare your environment file:
+```bash
+cp .env.example .env
+```
+*(Ensure DB and Redis configurations in `.env` match the docker-compose services)*
+
+### 3. Spin up Docker Containers
+Start the infrastructure (Nginx, PHP-FPM, MySQL, Redis):
+```bash
+docker compose up -d
+```
+
+### 4. Install Dependencies
+Install PHP and Node dependencies inside the app container:
+```bash
+docker compose exec app composer install
+docker compose exec app npm install
+```
+
+### 5. Application Key & Migrations
+Generate the app key and seed the database with events/inventory:
+```bash
+docker compose exec app php artisan key:generate
+docker compose exec app php artisan migrate:fresh --seed
+```
+
+### 6. Build Frontend Assets
+Compile the React/TailwindCSS frontend assets:
+```bash
+# For development/hot-reloading:
+docker compose exec app npm run dev
+
+# Or for a production build:
+docker compose exec app npm run build
+```
+
+**That's it!** The application is now accessible at `http://localhost`.
+
+---
+
+## Running Tests
+
+The application features a comprehensive test suite (49+ tests) covering Authentication, high-concurrency Booking Services, and Profiles.
+
+To run the unit and feature tests:
+```bash
+docker compose exec app php artisan test
+```
+
+To run code-style checks (Pint):
+```bash
+docker compose exec app ./vendor/bin/pint --test
+```
 
 ---
 
 ## Architecture Overview
 
-```
-Request → Rate Limiter (10/min) → Auth Guard → BookingRequest (validation)
-                                                      │
-                                                      ▼
-                                              BookingController
-                                              (Web or API)
-                                                      │
-                                                      ▼
-                                              BookingService.bookTickets()
-                                                      │
-                                    ┌─────────────────┼─────────────────┐
-                                    ▼                 ▼                 ▼
-                              Redis Lock        Redis Inventory    DB Transaction
-                          (per-event, 5s)       (decrby/incrby)    (insert Booking)
-```
+**Concurrency Strategy:**
+1. **Redis atomic lock** (`Cache::lock('book_event_{id}')`) serialises requests per event to prevent race conditions.
+2. **Redis hot inventory** provides O(1) reads and decrements for blazing-fast checkout validation (bypassing heavy DB counts in the hot path).
+3. **Database transactions** wrap the actual booking insertion — if the DB fails, the Redis inventory is cleanly rolled back.
+4. **Rate limiter** (10 req/min/user) throttles automated bot spam on the booking endpoint.
 
-**Concurrency strategy:**
-1. **Redis atomic lock** (`Cache::lock('book_event_{id}', 5)`) serialises requests per event
-2. **Redis inventory** for O(1) reads/decrements — no DB in the hot path
-3. **DB transaction** for the booking insert — if it fails, Redis inventory is rolled back
-4. **Rate limiter** (10 req/min per user) prevents bot spam on both Web and API
-
----
-
-## Getting Started
-
-### Prerequisites
-- Docker & Docker Compose
-
-### Setup
-```bash
-# 1. Start all containers
-docker compose up -d
-
-# 2. Verify containers are running
-docker compose ps
-# Should show: coldplay_tickets_app, coldplay_tickets_nginx, coldplay_tickets_mysql, coldplay_tickets_redis
-
-# 3. Run migrations & seed
-docker compose exec app php artisan migrate:fresh --seed --seeder=EventSeeder
-```
-
----
-
-## API Routes
-
-| Method | URI | Auth | Rate Limit | Controller |
-|---|---|---|---|---|
-| `POST` | `/bookings` | Session (web) | `throttle:booking` | `Web\BookingController@store` |
-| `POST` | `/api/bookings` | Sanctum token | `throttle:booking` | `Api\BookingController@store` |
-
-### Request Body
-```json
-{
-    "event_id": 1,
-    "quantity": 2
-}
-```
-
-### Validation Rules
-| Field | Rules |
-|---|---|
-| `event_id` | required, integer, must exist in `events` table |
-| `quantity` | required, integer, min: 1, max: 4 |
-| *custom* | User cannot exceed 4 total tickets per event across all bookings |
-
-### Web Response (Inertia)
-- **Success** → redirect back with `session('success')` flash
-- **Sold out** → redirect back with `session('error')` flash
-- **Validation** → redirect back with `session('errors')` (standard Laravel)
-
-### API Response
-**201 Created** (success):
-```json
-{
-    "message": "Tickets booked successfully.",
-    "data": {
-        "booking_id": 1,
-        "event_id": 1,
-        "quantity": 2,
-        "status": "confirmed",
-        "created_at": "2026-02-20T17:30:00.000000Z"
-    }
-}
-```
-
-**409 Conflict** (sold out):
-```json
-{
-    "message": "Only 3 ticket(s) remaining for Event #1, but 4 requested.",
-    "error": "sold_out",
-    "details": {
-        "event_id": 1,
-        "requested_quantity": 4,
-        "available_quantity": 3
-    }
-}
-```
-
-**422 Unprocessable** (validation error):
-```json
-{
-    "message": "You can only book 1 more ticket(s) for this event.",
-    "errors": { "quantity": ["..."] }
-}
-```
-
----
-
-## Verification Commands
-
-### Verify MySQL
-```bash
-# Check seeded event
-docker compose exec app php artisan tinker --execute="echo json_encode(App\Models\Event::first()->toArray(), JSON_PRETTY_PRINT);"
-
-# Check table schemas
-docker compose exec app php artisan tinker --execute="echo implode(', ', Illuminate\Support\Facades\Schema::getColumnListing('events'));"
-docker compose exec app php artisan tinker --execute="echo implode(', ', Illuminate\Support\Facades\Schema::getColumnListing('bookings'));"
-```
-
-### Verify Redis Inventory
-```bash
-# Via BookingService (recommended)
-docker compose exec app php artisan tinker --execute="echo 'Inventory: ' . app(App\Services\BookingService::class)->getAvailableTickets(1);"
-
-# Via Redis facade
-docker compose exec app php artisan tinker --execute="echo 'Inventory: ' . Illuminate\Support\Facades\Redis::get('event_inventory:1');"
-```
-> ⚠️ Do NOT use `Cache::get()` — the `BookingService` uses the `Redis` facade (prefix: `laravel-database-`), not the Cache facade.
-
-
----
-
-## Test Suite
-
-```bash
-# Run the full suite (49 tests, 118 assertions)
-docker exec coldplay_tickets_app php vendor/bin/phpunit
-
-# Run only BookingService tests
-docker exec coldplay_tickets_app php vendor/bin/phpunit tests/Feature/BookingServiceTest.php
-
-# Run only Controller tests
-docker exec coldplay_tickets_app php vendor/bin/phpunit tests/Feature/BookingControllerTest.php
-```
-
-
+**Frontend Features:**
+- Seamless zero-refresh SPA routing via **Inertia.js**.
+- Automatic Intent-based URL redirecting (Intercepts unauthorized checkouts, guides through login, and returns directly to the checkout form).
+- Beautiful, animated UI with a dynamic Light/Dark mode toggle (persisted via `localStorage`).
